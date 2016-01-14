@@ -1,6 +1,7 @@
 package com.usa.dev.drawerlayout.Helper;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.util.Log;
 
 import com.usa.dev.drawerlayout.API.RoadTripperClient;
@@ -60,7 +61,8 @@ public class RequestManager {
                         // Updating shared preferences with new accessToken
                         PreferencesManager preferencesManager = PreferencesManager.getInstance();
                         preferencesManager.setAccessToken(user.accessToken);
-                        updateFacebookToken(user.accessToken);
+                        verifyToken();
+                        renewToken();
                         break;
                     case 400:
                         Log.d("RequestManager", "login.onResponse: Invalid request (400)");
@@ -91,7 +93,7 @@ public class RequestManager {
      * @param newToken The new token
      */
     public void updateFacebookToken(String newToken) {
-        Call<Void> call = mClient.updateFacebookToken("Bearer "+PreferencesManager.getInstance().getAccessToken(), newToken);
+        Call<Void> call = mClient.updateFacebookToken("Bearer " + PreferencesManager.getInstance().getAccessToken(), newToken);
         call.enqueue(new Callback<Void>() {
             @Override
             public void onResponse(Response<Void> response, Retrofit retrofit) {
@@ -110,7 +112,56 @@ public class RequestManager {
 
             @Override
             public void onFailure(Throwable t) {
+                Log.e("RequestManager", "updateFacebookToken.onFailure: "+t.getMessage());
+            }
+        });
+    }
 
+    public void verifyToken() {
+        Call<Void>  call = mClient.verifyToken("Bearer " + PreferencesManager.getInstance().getAccessToken());
+        call.enqueue(new Callback<Void>() {
+            @Override
+            public void onResponse(Response<Void> response, Retrofit retrofit) {
+                switch (response.code()) {
+                    case 200:
+                        Log.d("RequestManager", "verifyToken.onResponse: Valid token");
+                        break;
+                    case 401:
+                        Log.d("RequestManager", "verifyToken.onResponse: Invalid token");
+                        renewToken();
+                        break;
+                }
+            }
+
+            @Override
+            public void onFailure(Throwable t) {
+                Log.e("RequestManager", "verifyToken.onFailure: "+t.getMessage());
+            }
+        });
+    }
+
+    public void renewToken() {
+        Call<String> call = mClient.renewToken("Basic "+PreferencesManager.getInstance().getAndroidSecret(), PreferencesManager.getInstance().getAccessToken());
+        call.enqueue(new Callback<String>() {
+            @Override
+            public void onResponse(Response<String> response, Retrofit retrofit) {
+                switch (response.code()) {
+                    case 200:
+                        Log.d("RequestManager", "renewToken.onResponse: Operation succeed - Updating access token");
+                        PreferencesManager.getInstance().setAccessToken(response.body());
+                        break;
+                    case 400:
+                        Log.e("RequestManager", "renewToken.onResponse: Invalid request");
+                        break;
+                    case 401:
+                        Log.e("RequestManager", "renewToken.onResponse: Unauthorized request");
+                        break;
+                }
+            }
+
+            @Override
+            public void onFailure(Throwable t) {
+                Log.e("RequestManager", "RequestManager.onFailure: "+t.getMessage());
             }
         });
     }

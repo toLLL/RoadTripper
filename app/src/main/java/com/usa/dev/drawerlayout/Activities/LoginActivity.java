@@ -17,6 +17,7 @@ import com.facebook.FacebookException;
 import com.facebook.FacebookSdk;
 import com.facebook.login.LoginResult;
 import com.facebook.login.widget.LoginButton;
+import com.usa.dev.drawerlayout.Helper.PreferencesManager;
 import com.usa.dev.drawerlayout.Helper.RequestManager;
 import com.usa.dev.drawerlayout.R;
 
@@ -30,20 +31,26 @@ public class LoginActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        // Initialize Facebook SDK
         FacebookSdk.sdkInitialize(getApplicationContext());
+
+        // Initialize Preferences Manager
+        PreferencesManager.initializeInstance(getApplicationContext());
 
         setContentView(R.layout.activity_login);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
         mRequestManager = RequestManager.getInstance();
-        /*mAccessTokenTracker = new AccessTokenTracker() {
+        mAccessTokenTracker = new AccessTokenTracker() {
             @Override
             protected void onCurrentAccessTokenChanged(AccessToken oldAccessToken, AccessToken currentAccessToken) {
-                mRequestManager.updateFacebookToken(currentAccessToken.getToken());
+                if (currentAccessToken != null)
+                    mRequestManager.updateFacebookToken(currentAccessToken.getToken());
             }
         };
-        mAccessTokenTracker.startTracking();*/
+        mAccessTokenTracker.startTracking();
         final LoginButton loginButton = (LoginButton) findViewById(R.id.login_button);
         loginButton.setReadPermissions("user_friends");
         mCallbackManager = CallbackManager.Factory.create();
@@ -84,7 +91,6 @@ public class LoginActivity extends AppCompatActivity {
 
     private void registerToServer(String facebookToken) {
         mRequestManager.login(facebookToken);
-        //TODO
     }
 
     @Override
@@ -92,5 +98,6 @@ public class LoginActivity extends AppCompatActivity {
         super.onDestroy();
 
         mAccessTokenTracker.stopTracking();
+        Log.d("LoginActivity", "onDestroy: Stop tracking ");
     }
 }
