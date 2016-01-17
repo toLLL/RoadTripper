@@ -36,7 +36,7 @@ public class PreferencesManager {
     }
 
     public String getAndroidSecret() {
-        return mPref.getString(mContext.getString(R.string.saved_android_secret), "9b9f89952fabd799e4821984f5b1b81abb6734be");
+        return mPref.getString(mContext.getString(R.string.saved_android_secret), mContext.getString(R.string.maps_api_key));
     }
 
     public void setAccessToken(String accessToken) {
