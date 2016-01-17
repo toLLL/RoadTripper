@@ -7,10 +7,10 @@ import com.usa.dev.drawerlayout.API.APIError;
 import com.usa.dev.drawerlayout.API.Client;
 import com.usa.dev.drawerlayout.API.ErrorHandler;
 import com.usa.dev.drawerlayout.API.ErrorUtils;
-import com.usa.dev.drawerlayout.API.IRequestCallBack;
 import com.usa.dev.drawerlayout.API.RoadTripperClient;
 import com.usa.dev.drawerlayout.API.ServiceGenerator;
 
+import java.util.List;
 import java.util.concurrent.Callable;
 
 import retrofit.Call;
@@ -185,6 +185,81 @@ public class RequestManager{
     }
 
     public Client getClientInfo() {
+        Call<Client> call = mClient.getUserInfo("Bearer " + PreferencesManager.getInstance().getAccessToken());
+
+        call.enqueue(new Callback<Client>() {
+            @Override
+            public void onResponse(Response<Client> response, Retrofit retrofit) {
+                switch (response.code()) {
+                    case 200:
+                        Log.d("RequestManager", "getClientInfo.onResponse: Succeed");
+                        Client myClient = response.body();
+                        Log.d("RequestManager", "Client name=" + myClient.getName() + " - public id=" + myClient.getPublicId());
+                        break;
+                    case 401:
+                        Log.d("RequestManager", "getClientInfo: Unauthorized request (401)");
+                        ErrorHandler error = ErrorUtils.parseError(response, retrofit);
+                        try {
+                            if (error != null) {
+                                error.process(401, new Callable<Client>() {
+                                    @Override
+                                    public Client call() throws Exception {
+                                        return getClientInfo();
+                                    }
+                                });
+                            }
+                        } catch (Exception e) {
+                            throw new RuntimeException("RunTimeException: "+e.getMessage());
+                        }
+                        break;
+                }
+            }
+
+            @Override
+            public void onFailure(Throwable t) {
+                Log.e("RequestManager", "getClientInfo.onResponse: Failure :(");
+            }
+        });
+        return null;
+    }
+
+    public List<Client> getUserFriendList() {
+        Call<List<Client>> call = mClient.getUserFriendList("Bearer "+PreferencesManager.getInstance().getAccessToken());
+
+        Log.e("AccessToken", PreferencesManager.getInstance().getAccessToken());
+        call.enqueue(new Callback<List<Client>>() {
+            @Override
+            public void onResponse(Response<List<Client>> response, Retrofit retrofit) {
+                switch (response.code()) {
+                    case 200:
+                        Log.d("RequestManager", "getUserFriendList.onResponse: Succeed !");
+                        List<Client> friendList = response.body();
+                        Log.d("RequestManager", "Total number of friends="+friendList.size());
+                        break;
+                    case 401:
+                        Log.d("RequestManager", "getUserFriendList.onResponse: Unauthorized request (401)");
+                        ErrorHandler error = ErrorUtils.parseError(response, retrofit);
+                        if (error != null) {
+                            try {
+                                error.process(401, new Callable<List<Client>>() {
+                                    @Override
+                                    public List<Client> call() throws Exception {
+                                        return getUserFriendList();
+                                    }
+                                });
+                            } catch (Exception e) {
+                                throw new RuntimeException("RunTimeException: "+e.getMessage());
+                            }
+                        }
+                        break;
+                }
+            }
+
+            @Override
+            public void onFailure(Throwable t) {
+                Log.e("RequestManager", "getUserFriendList.onFailure: "+t.getMessage());
+            }
+        });
         return null;
     }
 }

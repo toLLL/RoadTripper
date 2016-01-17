@@ -24,7 +24,7 @@ public class ErrorHandler {
         return error;
     }
 
-    public void process(int requestCode, Callable<Integer> callable) throws Exception {
+    public void process(int requestCode, Callable<?> callable) throws Exception {
         switch (requestCode) {
             case 400:
                 if (this.getError().getErrorCode() == 1) {

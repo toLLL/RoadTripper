@@ -2,6 +2,8 @@ package com.usa.dev.drawerlayout.API;
 
 import com.usa.dev.drawerlayout.Helper.RequestManager;
 
+import java.util.List;
+
 import retrofit.Call;
 import retrofit.http.Field;
 import retrofit.http.FormUrlEncoded;
@@ -30,4 +32,10 @@ public interface RoadTripperClient {
 
     @GET("/v1/auth/renew")
     Call<String> renewToken(@Header("Authorization") String token, @Query("access_token") String expiredToken);
+
+    @GET("/v1/user/info")
+    Call<Client> getUserInfo(@Header("Authorization") String token);
+
+    @GET("/v1/user/friend")
+    Call<List<Client>> getUserFriendList(@Header("Authorization") String token);
 }
