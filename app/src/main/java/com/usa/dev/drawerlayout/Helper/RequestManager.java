@@ -1,11 +1,17 @@
 package com.usa.dev.drawerlayout.Helper;
 
-import android.content.Context;
-import android.content.SharedPreferences;
 import android.util.Log;
 
+import com.facebook.AccessToken;
+import com.usa.dev.drawerlayout.API.APIError;
+import com.usa.dev.drawerlayout.API.Client;
+import com.usa.dev.drawerlayout.API.ErrorHandler;
+import com.usa.dev.drawerlayout.API.ErrorUtils;
+import com.usa.dev.drawerlayout.API.IRequestCallBack;
 import com.usa.dev.drawerlayout.API.RoadTripperClient;
 import com.usa.dev.drawerlayout.API.ServiceGenerator;
+
+import java.util.concurrent.Callable;
 
 import retrofit.Call;
 import retrofit.Callback;
@@ -17,7 +23,7 @@ import retrofit.Retrofit;
  * Date: 13/01/2016
  * Purpose: Handling all request
  */
-public class RequestManager {
+public class RequestManager{
 
     /************************************************
      * Start - Objects
@@ -61,8 +67,6 @@ public class RequestManager {
                         // Updating shared preferences with new accessToken
                         PreferencesManager preferencesManager = PreferencesManager.getInstance();
                         preferencesManager.setAccessToken(user.accessToken);
-                        verifyToken();
-                        renewToken();
                         break;
                     case 400:
                         Log.d("RequestManager", "login.onResponse: Invalid request (400)");
@@ -92,11 +96,12 @@ public class RequestManager {
      * Update the server side facebook token
      * @param newToken The new token
      */
-    public void updateFacebookToken(String newToken) {
-        Call<Void> call = mClient.updateFacebookToken("Bearer " + PreferencesManager.getInstance().getAccessToken(), newToken);
-        call.enqueue(new Callback<Void>() {
+    public int updateFacebookToken(String newToken) {
+
+        Call<APIError> call = mClient.updateFacebookToken("Bearer " + PreferencesManager.getInstance().getAccessToken(), newToken);
+        call.enqueue(new Callback<APIError>() {
             @Override
-            public void onResponse(Response<Void> response, Retrofit retrofit) {
+            public void onResponse(Response<APIError> response, Retrofit retrofit) {
                 switch (response.code()) {
                     case 200:
                         Log.d("RequestManager", "updateFacebookToken.onResponse: Operation succeed");
@@ -106,6 +111,18 @@ public class RequestManager {
                         break;
                     case 401:
                         Log.d("RequestManager", "updateFacebookToken.onResponse: Unauthorized request");
+                        ErrorHandler error = ErrorUtils.parseError(response, retrofit);
+                        if (error != null) {
+                            try {
+                                error.process(401, new Callable<Integer>() {
+                                    public Integer call() {
+                                        return updateFacebookToken(AccessToken.getCurrentAccessToken().getToken());
+                                    }
+                                });
+                            } catch (Exception e) {
+                                throw new RuntimeException("RunTimeException: "+e.getMessage());
+                            }
+                        }
                         break;
                 }
             }
@@ -115,6 +132,7 @@ public class RequestManager {
                 Log.e("RequestManager", "updateFacebookToken.onFailure: "+t.getMessage());
             }
         });
+        return 0;
     }
 
     public void verifyToken() {
@@ -141,7 +159,7 @@ public class RequestManager {
     }
 
     public void renewToken() {
-        Call<String> call = mClient.renewToken("Basic "+PreferencesManager.getInstance().getAndroidSecret(), PreferencesManager.getInstance().getAccessToken());
+        Call<String> call = mClient.renewToken("Basic " + PreferencesManager.getInstance().getAndroidSecret(), PreferencesManager.getInstance().getAccessToken());
         call.enqueue(new Callback<String>() {
             @Override
             public void onResponse(Response<String> response, Retrofit retrofit) {
@@ -164,5 +182,9 @@ public class RequestManager {
                 Log.e("RequestManager", "RequestManager.onFailure: "+t.getMessage());
             }
         });
+    }
+
+    public Client getClientInfo() {
+        return null;
     }
 }

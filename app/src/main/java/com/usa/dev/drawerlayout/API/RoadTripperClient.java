@@ -23,7 +23,7 @@ public interface RoadTripperClient {
 
     @FormUrlEncoded
     @POST("/v1/auth/facebooktoken")
-    Call<Void> updateFacebookToken(@Header("Authorization") String token, @Field("facebookToken") String facebookToken);
+    Call<APIError> updateFacebookToken(@Header("Authorization") String token, @Field("facebookToken") String facebookToken);
 
     @GET("/v1/auth/token")
     Call<Void> verifyToken(@Header("Authorization") String token);
